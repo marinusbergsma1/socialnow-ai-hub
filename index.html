@@ -21,21 +21,18 @@
 </head>
 <body>
 
-  <!-- ============ PARTICLE CANVAS (Mouse Effect) ============ -->
-  <canvas id="particleCanvas"></canvas>
-
   <!-- ============ AUTH SCREEN ============ -->
   <div id="authScreen" class="auth-screen">
+    <!-- Dotted orbit ring decoration -->
+    <div class="auth-orbit"></div>
+
     <div class="auth-container">
       <div class="auth-logo">
         <img src="https://socialnow.nl/images/Logo-Social-Now-Lengte.webp" alt="SocialNow" class="auth-logo-img">
-        <div class="auth-logo-sub">
-          <span class="text-green">AI</span> Hub
-          <span class="auth-badge">KNOWLEDGE BASE</span>
-        </div>
+        <p class="auth-subtitle" id="authSubtitle">AI Hub &mdash; Log in op je account</p>
       </div>
 
-      <div class="auth-card glass-card">
+      <div class="auth-card">
         <div id="authTabs" class="auth-tabs">
           <button class="auth-tab active" data-tab="login">Inloggen</button>
           <button class="auth-tab" data-tab="register">Registreren</button>
@@ -44,14 +41,20 @@
         <!-- Login Form -->
         <form id="loginForm" class="auth-form">
           <div class="form-group">
-            <label><i data-lucide="mail" class="form-icon"></i> E-mail</label>
-            <input type="email" id="loginEmail" required placeholder="jouw@email.nl" autocomplete="email">
+            <label class="auth-label">E-mailadres</label>
+            <div class="auth-input-wrap">
+              <i data-lucide="mail" class="auth-input-icon"></i>
+              <input type="email" id="loginEmail" required placeholder="jouw@email.nl" autocomplete="email">
+            </div>
           </div>
           <div class="form-group">
-            <label><i data-lucide="lock" class="form-icon"></i> Wachtwoord</label>
-            <input type="password" id="loginPassword" required placeholder="Je wachtwoord" autocomplete="current-password">
+            <label class="auth-label">Wachtwoord</label>
+            <div class="auth-input-wrap">
+              <i data-lucide="lock" class="auth-input-icon"></i>
+              <input type="password" id="loginPassword" required placeholder="Je wachtwoord" autocomplete="current-password">
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-full">
+          <button type="submit" class="btn-auth-submit">
             <i data-lucide="log-in"></i> Inloggen
           </button>
           <div id="loginError" class="auth-error"></div>
@@ -60,28 +63,34 @@
         <!-- Register Form -->
         <form id="registerForm" class="auth-form hidden">
           <div class="form-group">
-            <label><i data-lucide="user" class="form-icon"></i> Naam</label>
-            <input type="text" id="registerName" required placeholder="Je naam">
+            <label class="auth-label">Naam</label>
+            <div class="auth-input-wrap">
+              <i data-lucide="user" class="auth-input-icon"></i>
+              <input type="text" id="registerName" required placeholder="Je naam">
+            </div>
           </div>
           <div class="form-group">
-            <label><i data-lucide="mail" class="form-icon"></i> E-mail</label>
-            <input type="email" id="registerEmail" required placeholder="jouw@email.nl" autocomplete="email">
+            <label class="auth-label">E-mailadres</label>
+            <div class="auth-input-wrap">
+              <i data-lucide="mail" class="auth-input-icon"></i>
+              <input type="email" id="registerEmail" required placeholder="jouw@email.nl" autocomplete="email">
+            </div>
           </div>
           <div class="form-group">
-            <label><i data-lucide="lock" class="form-icon"></i> Wachtwoord</label>
-            <input type="password" id="registerPassword" required placeholder="Min. 6 tekens" minlength="6" autocomplete="new-password">
+            <label class="auth-label">Wachtwoord</label>
+            <div class="auth-input-wrap">
+              <i data-lucide="lock" class="auth-input-icon"></i>
+              <input type="password" id="registerPassword" required placeholder="Min. 6 tekens" minlength="6" autocomplete="new-password">
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-full">
+          <button type="submit" class="btn-auth-submit">
             <i data-lucide="user-plus"></i> Account aanmaken
           </button>
           <div id="registerError" class="auth-error"></div>
         </form>
-      </div>
 
-      <p class="auth-footer">
-        <i data-lucide="sparkles" class="icon-sm"></i>
-        Powered by SocialNow &mdash; AI Knowledge Management
-      </p>
+        <p class="auth-forgot">Wachtwoord vergeten?</p>
+      </div>
     </div>
   </div>
 
@@ -798,7 +807,7 @@
 
   <!-- Scripts -->
   <script src="js/config.js"></script>
-  <script src="js/particles.js"></script>
+  <!-- particles.js removed -->
   <script src="js/auth.js"></script>
   <script src="js/database.js"></script>
   <script src="js/ui.js"></script>
