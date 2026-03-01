@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialNow AI Hub - Knowledge Base</title>
+  <link rel="icon" type="image/png" href="https://socialnow.nl/favicon.png">
+
+  <!-- Fonts (matching SocialNow Studio) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- Supabase -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============ PARTICLE CANVAS (Mouse Effect) ============ -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- ============ AUTH SCREEN ============ -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <img src="https://socialnow.nl/images/Logo-Social-Now-Lengte.webp" alt="SocialNow" class="auth-logo-img">
+        <div class="auth-logo-sub">
+          <span class="text-green">AI</span> Hub
+          <span class="auth-badge">KNOWLEDGE BASE</span>
+        </div>
+      </div>
+
+      <div class="auth-card glass-card">
+        <div id="authTabs" class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Inloggen</button>
+          <button class="auth-tab" data-tab="register">Registreren</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-group">
+            <label><i data-lucide="mail" class="form-icon"></i> E-mail</label>
+            <input type="email" id="loginEmail" required placeholder="jouw@email.nl" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label><i data-lucide="lock" class="form-icon"></i> Wachtwoord</label>
+            <input type="password" id="loginPassword" required placeholder="Je wachtwoord" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            <i data-lucide="log-in"></i> Inloggen
+          </button>
+          <div id="loginError" class="auth-error"></div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form hidden">
+          <div class="form-group">
+            <label><i data-lucide="user" class="form-icon"></i> Naam</label>
+            <input type="text" id="registerName" required placeholder="Je naam">
+          </div>
+          <div class="form-group">
+            <label><i data-lucide="mail" class="form-icon"></i> E-mail</label>
+            <input type="email" id="registerEmail" required placeholder="jouw@email.nl" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label><i data-lucide="lock" class="form-icon"></i> Wachtwoord</label>
+            <input type="password" id="registerPassword" required placeholder="Min. 6 tekens" minlength="6" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">
+            <i data-lucide="user-plus"></i> Account aanmaken
+          </button>
+          <div id="registerError" class="auth-error"></div>
+        </form>
+      </div>
+
+      <p class="auth-footer">
+        <i data-lucide="sparkles" class="icon-sm"></i>
+        Powered by SocialNow &mdash; AI Knowledge Management
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ MAIN APPLICATION ============ -->
+  <div id="appScreen" class="app-screen hidden">
+
+    <!-- ---- SIDEBAR ---- -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <img src="https://socialnow.nl/images/Logo-Social-Now-Lengte.webp" alt="SocialNow" class="sidebar-logo">
+        <span class="sidebar-title"><span class="text-green">AI</span> Hub</span>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sidebar-actions">
+        <button class="btn btn-primary btn-sm btn-full" id="btnAddResource">
+          <i data-lucide="plus"></i> Toevoegen
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="videos">
+          <i data-lucide="play-circle"></i>
+          <span>Video's</span>
+          <span class="nav-badge" id="videoCount">0</span>
+        </button>
+        <button class="nav-item" data-view="articles">
+          <i data-lucide="file-text"></i>
+          <span>Artikelen</span>
+        </button>
+        <button class="nav-item" data-view="tools">
+          <i data-lucide="wrench"></i>
+          <span>AI Tools</span>
+        </button>
+        <button class="nav-item" data-view="prompts">
+          <i data-lucide="message-square"></i>
+          <span>Prompts</span>
+        </button>
+        <button class="nav-item" data-view="notes">
+          <i data-lucide="sticky-note"></i>
+          <span>Notities</span>
+        </button>
+        <button class="nav-item" data-view="collections">
+          <i data-lucide="layout-grid"></i>
+          <span>Collecties</span>
+        </button>
+
+        <div class="nav-divider"></div>
+
+        <button class="nav-item" data-view="folders">
+          <i data-lucide="folder-tree"></i>
+          <span>Mappen</span>
+        </button>
+        <button class="nav-item" data-view="favorites">
+          <i data-lucide="star"></i>
+          <span>Favorieten</span>
+        </button>
+        <button class="nav-item" data-view="inbox">
+          <i data-lucide="inbox"></i>
+          <span>Inbox</span>
+          <span class="nav-badge nav-badge-green" id="inboxCount">0</span>
+        </button>
+
+        <div class="nav-divider"></div>
+
+        <button class="nav-item" data-view="chat">
+          <i data-lucide="bot"></i>
+          <span>AI Assistent</span>
+          <span class="nav-badge nav-badge-pulse"></span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Categories -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-header">
+          <span>Categorieën</span>
+          <button class="btn-icon-sm" id="btnAddCategory" title="Categorie toevoegen">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+        <div id="sidebarCategories" class="sidebar-categories">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- User -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="userAvatar">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="sidebar-user-info">
+            <span id="userName" class="sidebar-user-name">Loading...</span>
+            <span class="sidebar-user-role">AI Explorer</span>
+          </div>
+          <button class="btn-icon-sm" id="btnLogout" title="Uitloggen">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ---- MAIN CONTENT ---- -->
+    <main class="main-content">
+
+      <!-- Top Bar -->
+      <header class="topbar">
+        <button class="btn-icon sidebar-toggle" id="btnToggleSidebar">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="search-container">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="globalSearch" class="search-input" placeholder="Zoek in je kennisbank... (Ctrl+K)">
+          <kbd class="search-kbd">Ctrl+K</kbd>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn-icon" id="btnGridView" title="Grid weergave">
+            <i data-lucide="grid-3x3"></i>
+          </button>
+          <button class="btn-icon" id="btnListView" title="Lijst weergave">
+            <i data-lucide="list"></i>
+          </button>
+          <div class="topbar-divider"></div>
+          <button class="btn-icon" id="btnNotifications" title="Meldingen">
+            <i data-lucide="bell"></i>
+          </button>
+          <button class="btn-icon" id="btnSettings" title="Instellingen">
+            <i data-lucide="settings"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Views Container -->
+      <div class="views-container">
+
+        <!-- ======= DASHBOARD VIEW ======= -->
+        <section id="viewDashboard" class="view active">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title">
+                <i data-lucide="sparkles" class="text-green"></i>
+                Welkom terug, <span id="dashboardName">gebruiker</span>
+              </h1>
+              <p class="view-subtitle">Je persoonlijke AI kennisbank</p>
+            </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-green"><i data-lucide="play-circle"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statVideos">0</span>
+                <span class="stat-label">Video's</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-yellow"><i data-lucide="file-text"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statArticles">0</span>
+                <span class="stat-label">Artikelen</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-pink"><i data-lucide="wrench"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statTools">0</span>
+                <span class="stat-label">AI Tools</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-blue"><i data-lucide="message-square"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statPrompts">0</span>
+                <span class="stat-label">Prompts</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-purple"><i data-lucide="folder"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statFolders">0</span>
+                <span class="stat-label">Mappen</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon bg-orange"><i data-lucide="star"></i></div>
+              <div class="stat-info">
+                <span class="stat-value" id="statFavorites">0</span>
+                <span class="stat-label">Favorieten</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent & Favorites -->
+          <div class="dashboard-grid">
+            <div class="dashboard-section">
+              <h2 class="section-title"><i data-lucide="clock"></i> Recent toegevoegd</h2>
+              <div id="recentResources" class="resource-grid">
+                <div class="empty-state">
+                  <i data-lucide="inbox" class="empty-icon"></i>
+                  <p>Nog geen items. Klik op <strong>+ Toevoegen</strong> om te beginnen.</p>
+                </div>
+              </div>
+            </div>
+            <div class="dashboard-section">
+              <h2 class="section-title"><i data-lucide="star"></i> Favorieten</h2>
+              <div id="favoriteResources" class="resource-list">
+                <div class="empty-state">
+                  <i data-lucide="star" class="empty-icon"></i>
+                  <p>Markeer items als favoriet om ze hier te zien.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Add Tiles -->
+          <div class="quick-add-section">
+            <h2 class="section-title"><i data-lucide="zap"></i> Snel toevoegen</h2>
+            <div class="quick-add-grid">
+              <button class="quick-add-tile" data-type="video">
+                <i data-lucide="play-circle"></i>
+                <span>Video</span>
+              </button>
+              <button class="quick-add-tile" data-type="article">
+                <i data-lucide="file-text"></i>
+                <span>Artikel</span>
+              </button>
+              <button class="quick-add-tile" data-type="tool">
+                <i data-lucide="wrench"></i>
+                <span>AI Tool</span>
+              </button>
+              <button class="quick-add-tile" data-type="prompt">
+                <i data-lucide="message-square"></i>
+                <span>Prompt</span>
+              </button>
+              <button class="quick-add-tile" data-type="note">
+                <i data-lucide="sticky-note"></i>
+                <span>Notitie</span>
+              </button>
+              <button class="quick-add-tile" data-type="bookmark">
+                <i data-lucide="bookmark"></i>
+                <span>Bookmark</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======= VIDEOS VIEW ======= -->
+        <section id="viewVideos" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="play-circle" class="text-green"></i> Video's</h1>
+              <p class="view-subtitle">AI video's automatisch gecategoriseerd</p>
+            </div>
+            <div class="view-actions">
+              <select id="videoFilter" class="select-input">
+                <option value="all">Alle categorieën</option>
+              </select>
+              <select id="videoSort" class="select-input">
+                <option value="newest">Nieuwste eerst</option>
+                <option value="oldest">Oudste eerst</option>
+                <option value="rating">Hoogst beoordeeld</option>
+                <option value="views">Meest bekeken</option>
+              </select>
+              <button class="btn btn-primary" id="btnAddVideo">
+                <i data-lucide="plus"></i> Video toevoegen
+              </button>
+            </div>
+          </div>
+          <div id="videoGrid" class="resource-grid">
+            <div class="empty-state">
+              <i data-lucide="play-circle" class="empty-icon"></i>
+              <h3>Nog geen video's</h3>
+              <p>Plak een YouTube URL om te beginnen. De video wordt automatisch gecategoriseerd en samengevat.</p>
+              <button class="btn btn-primary" onclick="document.getElementById('btnAddVideo').click()">
+                <i data-lucide="plus"></i> Eerste video toevoegen
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======= ARTICLES VIEW ======= -->
+        <section id="viewArticles" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="file-text" class="text-yellow"></i> Artikelen & Bookmarks</h1>
+              <p class="view-subtitle">Opgeslagen artikelen en webpagina's</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddArticle">
+                <i data-lucide="plus"></i> Artikel toevoegen
+              </button>
+            </div>
+          </div>
+          <div id="articleGrid" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= TOOLS VIEW ======= -->
+        <section id="viewTools" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="wrench" class="text-pink"></i> AI Tools</h1>
+              <p class="view-subtitle">Jouw verzameling AI tools en services</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddTool">
+                <i data-lucide="plus"></i> Tool toevoegen
+              </button>
+            </div>
+          </div>
+          <div id="toolGrid" class="resource-grid tools-grid"></div>
+        </section>
+
+        <!-- ======= PROMPTS VIEW ======= -->
+        <section id="viewPrompts" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="message-square" class="text-blue"></i> Prompts</h1>
+              <p class="view-subtitle">Opgeslagen prompts en templates</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddPrompt">
+                <i data-lucide="plus"></i> Prompt toevoegen
+              </button>
+            </div>
+          </div>
+          <div id="promptGrid" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= NOTES VIEW ======= -->
+        <section id="viewNotes" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="sticky-note" class="text-orange"></i> Notities</h1>
+              <p class="view-subtitle">Persoonlijke notities en inzichten</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddNote">
+                <i data-lucide="plus"></i> Notitie toevoegen
+              </button>
+            </div>
+          </div>
+          <div id="noteGrid" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= COLLECTIONS VIEW ======= -->
+        <section id="viewCollections" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="layout-grid" class="text-purple"></i> Collecties</h1>
+              <p class="view-subtitle">Samengestelde lijsten en leerpaden</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddCollection">
+                <i data-lucide="plus"></i> Collectie aanmaken
+              </button>
+            </div>
+          </div>
+          <div id="collectionGrid" class="collection-grid"></div>
+        </section>
+
+        <!-- ======= FOLDERS VIEW ======= -->
+        <section id="viewFolders" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="folder-tree" class="text-green"></i> Mappen</h1>
+              <p class="view-subtitle">Organiseer je kennisbank in mappen</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-primary" id="btnAddFolder">
+                <i data-lucide="folder-plus"></i> Nieuwe map
+              </button>
+            </div>
+          </div>
+          <div id="folderTree" class="folder-tree"></div>
+          <div id="folderContents" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= FAVORITES VIEW ======= -->
+        <section id="viewFavorites" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="star" class="text-yellow"></i> Favorieten</h1>
+              <p class="view-subtitle">Je gemarkeerde items</p>
+            </div>
+          </div>
+          <div id="favoritesGrid" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= INBOX VIEW ======= -->
+        <section id="viewInbox" class="view">
+          <div class="view-header">
+            <div>
+              <h1 class="view-title"><i data-lucide="inbox" class="text-green"></i> Inbox</h1>
+              <p class="view-subtitle">Nieuwe en ongesorteerde items</p>
+            </div>
+            <div class="view-actions">
+              <button class="btn btn-outline" id="btnAutoSort">
+                <i data-lucide="sparkles"></i> Auto-categoriseer alles
+              </button>
+            </div>
+          </div>
+          <div id="inboxGrid" class="resource-grid"></div>
+        </section>
+
+        <!-- ======= AI CHAT VIEW ======= -->
+        <section id="viewChat" class="view view-chat">
+          <div class="chat-container">
+            <div class="chat-sidebar glass-card">
+              <div class="chat-sidebar-header">
+                <h3><i data-lucide="bot"></i> AI Assistent</h3>
+                <button class="btn btn-sm btn-outline" id="btnNewChat">
+                  <i data-lucide="plus"></i> Nieuw
+                </button>
+              </div>
+              <div id="chatSessionList" class="chat-session-list">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+            <div class="chat-main">
+              <div id="chatMessages" class="chat-messages">
+                <div class="chat-welcome">
+                  <div class="chat-welcome-icon">
+                    <i data-lucide="bot"></i>
+                  </div>
+                  <h2>SocialNow AI Assistent</h2>
+                  <p>Stel me vragen over AI, je opgeslagen content, of vraag om hulp bij het leren van nieuwe AI concepten.</p>
+                  <div class="chat-suggestions">
+                    <button class="chat-suggestion" data-prompt="Wat zijn de beste AI tools voor beginners?">
+                      <i data-lucide="sparkles"></i> Beste AI tools voor beginners
+                    </button>
+                    <button class="chat-suggestion" data-prompt="Leg prompt engineering uit in simpele termen">
+                      <i data-lucide="message-square"></i> Prompt engineering uitgelegd
+                    </button>
+                    <button class="chat-suggestion" data-prompt="Geef een samenvatting van mijn recent opgeslagen video's">
+                      <i data-lucide="play-circle"></i> Samenvatting recente video's
+                    </button>
+                    <button class="chat-suggestion" data-prompt="Welke AI trends zijn nu belangrijk?">
+                      <i data-lucide="trending-up"></i> Huidige AI trends
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-input-container">
+                <div class="chat-input-wrapper glass-card">
+                  <button class="btn-icon" id="btnAttachResource" title="Koppel resource">
+                    <i data-lucide="paperclip"></i>
+                  </button>
+                  <textarea id="chatInput" class="chat-input" placeholder="Stel een vraag..." rows="1"></textarea>
+                  <button class="btn btn-primary btn-icon-round" id="btnSendChat" title="Verstuur">
+                    <i data-lucide="send"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ MODALS ============ -->
+
+  <!-- Add/Edit Resource Modal -->
+  <div id="modalResource" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content glass-card modal-large">
+      <div class="modal-header">
+        <h2 id="modalResourceTitle"><i data-lucide="plus-circle"></i> Resource toevoegen</h2>
+        <button class="btn-icon modal-close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="resourceForm">
+          <!-- Quick URL Input -->
+          <div class="form-group form-group-url">
+            <label><i data-lucide="link" class="form-icon"></i> URL (YouTube, artikel, etc.)</label>
+            <div class="url-input-group">
+              <input type="url" id="resourceUrl" placeholder="https://youtube.com/watch?v=... of een andere URL">
+              <button type="button" class="btn btn-primary" id="btnFetchUrl">
+                <i data-lucide="download"></i> Ophalen
+              </button>
+            </div>
+            <div id="urlPreview" class="url-preview hidden"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label><i data-lucide="type" class="form-icon"></i> Titel</label>
+              <input type="text" id="resourceTitle" required placeholder="Titel van de resource">
+            </div>
+            <div class="form-group">
+              <label><i data-lucide="tag" class="form-icon"></i> Type</label>
+              <select id="resourceType" class="select-input">
+                <option value="video">Video</option>
+                <option value="article">Artikel</option>
+                <option value="tool">AI Tool</option>
+                <option value="prompt">Prompt</option>
+                <option value="note">Notitie</option>
+                <option value="tutorial">Tutorial</option>
+                <option value="course">Cursus</option>
+                <option value="bookmark">Bookmark</option>
+                <option value="snippet">Code Snippet</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i data-lucide="align-left" class="form-icon"></i> Beschrijving</label>
+            <textarea id="resourceDescription" rows="3" placeholder="Korte beschrijving..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i data-lucide="folder" class="form-icon"></i> Map</label>
+              <select id="resourceFolder" class="select-input">
+                <option value="">Geen map</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label><i data-lucide="layers" class="form-icon"></i> Categorie</label>
+              <select id="resourceCategory" class="select-input">
+                <option value="">Automatisch</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label><i data-lucide="tags" class="form-icon"></i> Tags</label>
+            <input type="text" id="resourceTags" placeholder="Voeg tags toe (komma-gescheiden)">
+          </div>
+
+          <div class="form-group">
+            <label><i data-lucide="pencil" class="form-icon"></i> Persoonlijke notities</label>
+            <textarea id="resourceNotes" rows="3" placeholder="Je eigen notities en inzichten..."></textarea>
+          </div>
+
+          <!-- Video-specific fields -->
+          <div id="videoFields" class="video-fields hidden">
+            <div class="form-divider">
+              <span><i data-lucide="play-circle"></i> Video Details</span>
+            </div>
+            <div id="videoTranscript" class="transcript-container hidden">
+              <label><i data-lucide="subtitles" class="form-icon"></i> Transcript</label>
+              <div class="transcript-content"></div>
+            </div>
+            <div id="videoSummary" class="summary-container hidden">
+              <label><i data-lucide="sparkles" class="form-icon"></i> AI Samenvatting</label>
+              <div class="summary-tabs">
+                <button type="button" class="summary-tab active" data-summary="short">Kort</button>
+                <button type="button" class="summary-tab" data-summary="medium">Medium</button>
+                <button type="button" class="summary-tab" data-summary="detailed">Uitgebreid</button>
+                <button type="button" class="summary-tab" data-summary="keypoints">Kernpunten</button>
+              </div>
+              <div class="summary-content"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">Annuleren</button>
+        <button class="btn btn-primary" id="btnSaveResource">
+          <i data-lucide="save"></i> Opslaan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource Detail Modal -->
+  <div id="modalDetail" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content glass-card modal-xl">
+      <div class="modal-header">
+        <h2 id="detailTitle"></h2>
+        <div class="modal-header-actions">
+          <button class="btn-icon" id="btnDetailFavorite" title="Favoriet">
+            <i data-lucide="star"></i>
+          </button>
+          <button class="btn-icon" id="btnDetailEdit" title="Bewerken">
+            <i data-lucide="pencil"></i>
+          </button>
+          <button class="btn-icon" id="btnDetailDelete" title="Verwijderen">
+            <i data-lucide="trash-2"></i>
+          </button>
+          <button class="btn-icon modal-close"><i data-lucide="x"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" id="detailBody">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Folder Modal -->
+  <div id="modalFolder" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h2><i data-lucide="folder-plus"></i> Nieuwe map</h2>
+        <button class="btn-icon modal-close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="folderForm">
+          <div class="form-group">
+            <label>Map naam</label>
+            <input type="text" id="folderName" required placeholder="Bijv. 'ChatGPT Tips'">
+          </div>
+          <div class="form-group">
+            <label>Bovenliggende map</label>
+            <select id="folderParent" class="select-input">
+              <option value="">Hoofdmap</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kleur</label>
+            <div class="color-picker">
+              <button type="button" class="color-swatch active" data-color="#25D366" style="background:#25D366"></button>
+              <button type="button" class="color-swatch" data-color="#FFD700" style="background:#FFD700"></button>
+              <button type="button" class="color-swatch" data-color="#FF6B6B" style="background:#FF6B6B"></button>
+              <button type="button" class="color-swatch" data-color="#61DAFB" style="background:#61DAFB"></button>
+              <button type="button" class="color-swatch" data-color="#6366F1" style="background:#6366F1"></button>
+              <button type="button" class="color-swatch" data-color="#FF61D3" style="background:#FF61D3"></button>
+              <button type="button" class="color-swatch" data-color="#FF9500" style="background:#FF9500"></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Beschrijving</label>
+            <textarea id="folderDescription" rows="2" placeholder="Optioneel..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline modal-close">Annuleren</button>
+        <button class="btn btn-primary" id="btnSaveFolder">
+          <i data-lucide="folder-plus"></i> Map aanmaken
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Modal (Ctrl+K) -->
+  <div id="modalSearch" class="modal modal-search">
+    <div class="modal-overlay"></div>
+    <div class="modal-content glass-card">
+      <div class="search-modal-input">
+        <i data-lucide="search"></i>
+        <input type="text" id="searchModalInput" placeholder="Zoek in alles..." autofocus>
+        <kbd>ESC</kbd>
+      </div>
+      <div id="searchResults" class="search-results">
+        <div class="search-empty">
+          <p>Begin met typen om te zoeken...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QUICK DROP ZONE (Floating) ============ -->
+  <div id="quickDrop" class="quick-drop">
+    <div class="quick-drop-toggle" id="quickDropToggle" title="Quick Drop - Sleep of plak links">
+      <i data-lucide="inbox"></i>
+      <span class="quick-drop-badge hidden" id="quickDropBadge">0</span>
+    </div>
+    <div class="quick-drop-panel glass-card" id="quickDropPanel">
+      <div class="quick-drop-header">
+        <h3><i data-lucide="zap"></i> Quick Drop</h3>
+        <p>Plak links, sleep bestanden, of typ snel een notitie</p>
+      </div>
+      <div class="quick-drop-zone" id="quickDropZone">
+        <div class="quick-drop-zone-content">
+          <i data-lucide="upload-cloud" class="quick-drop-icon"></i>
+          <p>Sleep links of bestanden hierheen</p>
+          <span>of plak met Ctrl+V</span>
+        </div>
+      </div>
+      <div class="quick-drop-input-area">
+        <textarea id="quickDropInput" class="quick-drop-input" placeholder="Plak een URL, typ een notitie, of sleep content hierheen..." rows="2"></textarea>
+        <button class="btn btn-primary btn-sm" id="quickDropSubmit">
+          <i data-lucide="plus"></i> Toevoegen
+        </button>
+      </div>
+      <div id="quickDropQueue" class="quick-drop-queue hidden">
+        <div class="quick-drop-queue-header">
+          <span><i data-lucide="list"></i> Wachtrij</span>
+          <button class="btn btn-sm btn-outline" id="quickDropProcessAll">
+            <i data-lucide="sparkles"></i> Alles verwerken
+          </button>
+        </div>
+        <div id="quickDropItems" class="quick-drop-items">
+          <!-- Queue items filled by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Drop Overlay (shown when dragging over the page) -->
+  <div id="globalDropOverlay" class="global-drop-overlay hidden">
+    <div class="global-drop-content">
+      <i data-lucide="upload-cloud"></i>
+      <h2>Drop het hier!</h2>
+      <p>Links, tekst of bestanden worden automatisch verwerkt</p>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/resources.js"></script>
+  <script src="js/videos.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
