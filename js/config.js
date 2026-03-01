@@ -19,6 +19,10 @@ window.APP_CONFIG = {
   VERSION: '1.0.0',
   DEFAULT_THEME: 'dark',
 
+  // Supabase (used by transcript Edge Function calls)
+  SUPABASE_URL: SUPABASE_URL,
+  SUPABASE_ANON_KEY: SUPABASE_KEY,
+
   // YouTube
   YOUTUBE_OEMBED_URL: 'https://www.youtube.com/oembed',
   YOUTUBE_NOCOOKIE_URL: 'https://www.youtube-nocookie.com/embed/',

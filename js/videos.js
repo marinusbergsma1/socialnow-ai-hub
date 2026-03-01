@@ -473,6 +473,99 @@ class VideoManager {
   }
 
   // ===========================================================================
+  // TRANSCRIPT FETCHING (via Supabase Edge Function)
+  // ===========================================================================
+
+  /**
+   * Fetch the full transcript for a YouTube video via Supabase Edge Function.
+   * The Edge Function calls YouTube's Innertube API server-side (no CORS issues).
+   * @param {string} videoIdOrUrl - YouTube video ID or URL
+   * @param {string} [lang='en'] - Preferred language code
+   * @returns {Promise<Object|null>} Transcript data or null
+   */
+  async fetchTranscript(videoIdOrUrl, lang = 'en') {
+    const videoId = this.extractYouTubeId(videoIdOrUrl) || videoIdOrUrl;
+    if (!videoId) return null;
+
+    try {
+      const supabaseUrl = window.APP_CONFIG?.SUPABASE_URL
+        || 'https://rssngbdpgcxkkmaiekqe.supabase.co';
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/youtube-transcript?videoId=${encodeURIComponent(videoId)}&lang=${encodeURIComponent(lang)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${window.APP_CONFIG?.SUPABASE_ANON_KEY || ''}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.warn('VideoManager: transcript fetch returned', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+
+      if (data.error && !data.transcript) {
+        console.warn('VideoManager: transcript error:', data.error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('VideoManager: fetchTranscript failed', error);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch transcript and save it to the resource in the database.
+   * Also updates the UI with transcript data.
+   * @param {string} resourceId - The resource UUID in the database
+   * @param {string} videoId - YouTube video ID
+   * @returns {Promise<Object|null>} Transcript data or null
+   */
+  async fetchAndSaveTranscript(resourceId, videoId) {
+    if (!resourceId || !videoId) return null;
+
+    // Show loading state in UI
+    window.ui?.showToast?.('Transcript ophalen...', 'info');
+
+    const data = await this.fetchTranscript(videoId);
+    if (!data || !data.transcript) {
+      window.ui?.showToast?.('Geen transcript beschikbaar voor deze video', 'warning');
+      return null;
+    }
+
+    // Save transcript + summaries to database
+    const updates = {
+      transcript: data.transcript,
+      summary_short: data.summary_short || null,
+      summary_medium: data.summary_medium || null,
+      summary_detailed: data.summary_detailed || null,
+      key_points: data.key_points || [],
+      video_duration: data.videoDetails?.lengthSeconds || null,
+      video_channel: data.videoDetails?.channel || null,
+    };
+
+    if (window.db) {
+      const { error } = await window.db.updateResource(resourceId, updates);
+      if (error) {
+        console.error('VideoManager: failed to save transcript', error);
+        window.ui?.showToast?.('Fout bij opslaan transcript', 'error');
+      } else {
+        window.ui?.showToast?.(
+          `Transcript opgehaald! (${data.word_count || 0} woorden, ${data.captionType || 'auto'})`,
+          'success'
+        );
+      }
+    }
+
+    return data;
+  }
+
+  // ===========================================================================
   // FORM & EVENT LISTENERS
   // ===========================================================================
 
@@ -665,6 +758,82 @@ class VideoManager {
       preview.classList.remove('hidden');
       window.ui?.refreshIcons?.();
     }
+
+    // Auto-fetch transcript in background
+    if (info.videoId) {
+      this._autoFetchTranscript(info.videoId);
+    }
+  }
+
+  /**
+   * Fetch transcript in background and populate form fields.
+   * @param {string} videoId
+   * @private
+   */
+  async _autoFetchTranscript(videoId) {
+    const transcriptContainer = document.getElementById('videoTranscript');
+    const summaryContainer = document.getElementById('videoSummary');
+
+    // Show loading in transcript area
+    if (transcriptContainer) {
+      transcriptContainer.classList.remove('hidden');
+      transcriptContainer.querySelector('.transcript-content').innerHTML = `
+        <div class="transcript-loading">
+          <i data-lucide="loader-2" class="spin"></i>
+          <span>Transcript ophalen van YouTube...</span>
+        </div>`;
+      window.ui?.refreshIcons?.();
+    }
+
+    const data = await this.fetchTranscript(videoId);
+
+    if (!data || !data.transcript) {
+      if (transcriptContainer) {
+        transcriptContainer.querySelector('.transcript-content').innerHTML = `
+          <p class="text-muted">Geen transcript beschikbaar voor deze video.</p>`;
+      }
+      return;
+    }
+
+    // Fill transcript
+    if (transcriptContainer) {
+      const escapedTranscript = this._escapeHtml(data.timed_transcript || data.transcript);
+      transcriptContainer.querySelector('.transcript-content').innerHTML = `
+        <div class="transcript-meta">
+          <span class="transcript-badge">${data.captionType === 'auto-generated' ? 'Auto-gegenereerd' : 'Handmatig'}</span>
+          <span class="transcript-badge">${data.language?.toUpperCase() || ''}</span>
+          <span class="transcript-badge">${data.word_count || 0} woorden</span>
+        </div>
+        <pre class="transcript-text">${escapedTranscript}</pre>`;
+    }
+
+    // Fill summaries
+    if (summaryContainer && (data.summary_short || data.summary_medium)) {
+      summaryContainer.classList.remove('hidden');
+      const summContent = summaryContainer.querySelector('.summary-content');
+      if (summContent) {
+        summContent.innerHTML = `
+          <div class="summary-panel active" data-summary-panel="short">
+            <p>${this._escapeHtml(data.summary_short || 'Geen korte samenvatting beschikbaar.')}</p>
+          </div>
+          <div class="summary-panel" data-summary-panel="medium">
+            <p>${this._escapeHtml(data.summary_medium || 'Geen medium samenvatting beschikbaar.')}</p>
+          </div>
+          <div class="summary-panel" data-summary-panel="detailed">
+            <p>${this._escapeHtml(data.summary_detailed || 'Geen uitgebreide samenvatting beschikbaar.')}</p>
+          </div>
+          <div class="summary-panel" data-summary-panel="keypoints">
+            ${data.key_points && data.key_points.length > 0
+              ? '<ul>' + data.key_points.map(kp => `<li>${this._escapeHtml(kp)}</li>`).join('') + '</ul>'
+              : '<p>Geen kernpunten gevonden.</p>'}
+          </div>`;
+      }
+    }
+
+    // Store transcript data on the form for saving later
+    window._pendingTranscriptData = data;
+
+    window.ui?.showToast?.(`Transcript opgehaald! (${data.word_count || 0} woorden)`, 'success');
   }
 
   /**

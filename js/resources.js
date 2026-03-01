@@ -232,7 +232,8 @@ class ResourceManager {
 
     // Auto-categorise when no manual category chosen
     if (!categoryId && window.APP_CONFIG.AUTO_CATEGORIZE) {
-      const autoCategory = this.autoCategorize({ title, description, url });
+      const transcript = window._pendingTranscriptData?.transcript || '';
+      const autoCategory = this.autoCategorize({ title, description, url, transcript });
       if (autoCategory) {
         resourceData.category_id = autoCategory.id;
       }
@@ -243,6 +244,26 @@ class ResourceManager {
     const difficulty = this.autoDetectDifficulty(combinedText);
     if (difficulty) {
       resourceData.ai_difficulty = difficulty;
+    }
+
+    // Include pending transcript data for video resources
+    if (type === 'video' && window._pendingTranscriptData) {
+      const td = window._pendingTranscriptData;
+      if (td.transcript) resourceData.transcript = td.transcript;
+      if (td.summary_short) resourceData.summary_short = td.summary_short;
+      if (td.summary_medium) resourceData.summary_medium = td.summary_medium;
+      if (td.summary_detailed) resourceData.summary_detailed = td.summary_detailed;
+      if (td.key_points) {
+        resourceData.summary_keypoints = Array.isArray(td.key_points)
+          ? td.key_points.join('\n')
+          : td.key_points;
+      }
+      if (td.videoDetails) {
+        if (td.videoDetails.channel) resourceData.video_channel = td.videoDetails.channel;
+        if (td.videoDetails.lengthSeconds) resourceData.video_duration = td.videoDetails.lengthSeconds;
+      }
+      // Clear pending data after use
+      window._pendingTranscriptData = null;
     }
 
     try {
@@ -269,6 +290,16 @@ class ResourceManager {
       // Log activity
       const action = this._editingId ? 'updated' : 'created';
       await window.db.logActivity(userId, action, type, result.data?.id || this._editingId);
+
+      // If this is a new video without transcript, try fetching in background
+      if (!this._editingId && type === 'video' && result.data && !resourceData.transcript) {
+        const videoId = this.extractYouTubeId(url);
+        if (videoId && window.videoManager?.fetchAndSaveTranscript) {
+          window.videoManager.fetchAndSaveTranscript(result.data.id, videoId).catch((err) => {
+            console.warn('ResourceManager: achtergrond transcript ophalen mislukt', err);
+          });
+        }
+      }
 
       this._closeModal(document.getElementById('modalResource'));
       this._toast(
